@@ -169,6 +169,35 @@ public class SharpSevenZipCompressorTests : TestBase
     }
 
     [Test]
+    public void ModifyProtectedArchiveReverseTest()
+    {
+        var compressor = new SharpSevenZipCompressor
+        {
+            DirectoryStructure = false,
+            EncryptHeaders = true
+        };
+
+        compressor.CompressFilesEncrypted(TemporaryFile, "password", @"TestData\7z_LZMA2.7z", @"TestData\zip.zip");
+
+        var modificationList = new Dictionary<int, string?>
+            {
+                {0, null },
+                {1, "changed.zap"} // TO FIX: For each deleted index before some rename one rename is skipped!!!
+            };
+
+        compressor.ModifyArchive(TemporaryFile, modificationList, "password");
+
+        Assert.That(File.Exists(TemporaryFile), Is.True);
+
+        using var extractor = new SharpSevenZipExtractor(TemporaryFile, "password");
+        Assert.Multiple(() =>
+        {
+            Assert.That(extractor.FilesCount, Is.EqualTo(1));
+            Assert.That(extractor.ArchiveFileNames[1], Is.EqualTo("changed.zap"));
+        });
+    }
+
+    [Test]
     public void ModifyNonArchiveTest()
     {
         var compressor = new SharpSevenZipCompressor
